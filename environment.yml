@@ -1,0 +1,21 @@
+name: cfr-aai
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.10
+  - pip
+  - git
+  - cd-hit            # data/OAS_paired/scripts/04_cluster_split.py (OAS 클러스터링)
+  - pip:
+      # RTX 50xx(Blackwell)는 cu128 빌드가 필요하다. 다른 GPU면 cu126/cu124 로 바꿔도 됨.
+      - --extra-index-url https://download.pytorch.org/whl/cu128
+      - torch==2.7.1
+      - numpy==1.23.5
+      - pandas==2.2.2
+      - scikit-learn==1.7.2
+      - transformers==4.30.2
+      - git+https://github.com/oxpig/AbLang.git@8f901e99fd0ec6cedf12204f89b1de2cc76edbd4   # ablang 0.2.4 (PyPI에는 없음)
+      - pyyaml
+      - tqdm
+      - matplotlib

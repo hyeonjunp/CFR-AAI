@@ -1,0 +1,52 @@
+# 스모크 테스트용 config. config.yaml을 복사해 샘플 수/epoch만 줄였다.
+
+save_dir: "runs"
+run_name: "ablang_cdr_7class_smoke"
+
+dataset_dir: "../data/OAS_paired/dataset"
+chain: "both"
+kfold: 5
+
+mask_col:  "mask"
+seq_col:   "sequence"
+chain_col: "chain_type"
+id_col:    "sample_id"
+
+dynamic_padding: true
+max_len: 160
+
+quality_filter: "ok"
+dedup: false
+
+batch_size:       16
+valid_batch_size: 16
+num_workers:      0
+
+max_train_samples: 64
+max_valid_samples: 32
+max_test_samples:  32
+
+lr:            0.0001
+weight_decay:  0.001
+max_grad_norm: 1.0
+
+amp:       true
+amp_dtype: "bf16"
+
+num_epochs:     1
+validate_every: 1
+save_every:     1
+patience:       0
+
+pos_weight: 3.0
+chain_loss_weight: 1.0
+
+save_test_predictions: true
+
+model:
+  ablang_model_dir: "download"
+  dropout: 0.1
+  freeze_ablang: true
+  unfreeze_last_n: 0
+  num_attn_heads: null
+  use_chain_head: true

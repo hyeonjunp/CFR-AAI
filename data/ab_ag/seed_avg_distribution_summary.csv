@@ -1,0 +1,13 @@
+Dataset,Type,Interaction pairs,Noninteraction pairs,Total pairs,# Unique antigen,# Unique antibody,Interaction pairs (std),Noninteraction pairs (std),Total pairs (std),n_seeds
+HIV-unseen,Training,11302.2,12438.2,23740.4,1284.8,342.4,644.91,589.13,206.11,5
+HIV-unseen,Validation,1227.8,1409.6,2637.4,638.6,296.6,87.3,84.74,22.81,5
+HIV-unseen,Test(unseen),2050.0,2034.4,4084.4,410.4,112.8,219.91,234.52,59.15,5
+HIV-ab_unseen,Training,19412.4,19466.4,38878.8,1751.6,391.0,685.31,769.72,1251.28,5
+HIV-ab_unseen,Validation,2110.4,2209.0,4319.4,997.8,357.6,62.56,152.56,139.06,5
+HIV-ab_unseen,Test(unseen),3384.2,4804.6,8188.8,1173.6,66.0,719.97,921.02,1390.33,5
+HIV-ag_unseen,Training,18498.4,19310.6,37809.0,1549.8,457.0,369.41,419.93,772.29,5
+HIV-ag_unseen,Validation,2057.2,2143.4,4200.6,921.0,412.2,34.82,61.41,85.96,5
+HIV-ag_unseen,Test(unseen),4351.4,5026.0,9377.4,201.0,430.0,396.21,476.31,858.25,5
+AVIDa-ag_unseen,Training,10615.4,28733.0,39348.4,9.0,24702.6,798.74,1147.06,703.41,5
+AVIDa-ag_unseen,Validation,1200.4,3172.0,4372.4,9.0,4083.6,84.08,133.61,77.96,5
+AVIDa-ag_unseen,Test(unseen),10110.2,22869.0,32979.2,8.0,21156.2,880.42,1279.1,781.37,5

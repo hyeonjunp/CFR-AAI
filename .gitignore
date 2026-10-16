@@ -1,0 +1,18 @@
+runs/
+checkpoints/
+emb/
+.esm_cache/
+__pycache__/
+*.pt
+*.npz
+*.log
+*.ipynb
+.ipynb_checkpoints/
+# OAS 대용량 (scripts 로 재생성)
+data/OAS_paired/raw/
+data/OAS_paired/processed/
+data/OAS_paired/dataset/
+data/OAS_paired/bin/
+.env/
+.hf_cache/
+checkpoints_slim/

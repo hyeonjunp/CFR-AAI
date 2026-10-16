@@ -1,0 +1,82 @@
+# ABlang + AbLangStyleLayer — OAS_paired, 7-class region + VH/VL
+#
+#   토큰 head : FR1=1 CDR1=2 FR2=3 CDR2=4 FR3=5 CDR3=6 FR4=7  (7-class CE)
+#   서열 head : 아미노산 토큰 전체 mean-pooling -> VH/VL 이진분류 (BCE)
+#
+# model_OAS(ESM2 + sigmoid attention, 7-class + VH/VL)와 같은 라벨 체계/손실 구성이고,
+# 인코더만 ESM2(범용 단일 모델) 대신 ABlang(heavy/light 전용 체크포인트 2개)을 쓴다.
+
+save_dir: "runs"
+run_name: "ablang_cdr_7class"
+
+# ── 데이터 ────────────────────────────────────────────────────────────────────
+# dataset_dir/<chain>/fold_<k>/{train,valid,test}.csv.gz
+dataset_dir: "../data/OAS_paired/dataset"
+chain: "both"      # "both" = heavy+light 를 train/valid/test 모두 합쳐서 한 모델로 학습.
+                   # ABlang은 heavy/light 전용 체크포인트가 따로라 frozen 백본은 chain별로
+                   # 두 개를 들고, chain_type 컬럼으로 배치 내 라우팅한다 (model.py 참고).
+                   # "heavy" / "light" 로 두면 해당 체인만 (백본 하나만 로드).
+kfold: 5
+
+mask_col:  "mask"        # 0/1 CDR 마스크 → 여기서 7-class region 라벨을 유도한다
+seq_col:   "sequence"
+chain_col: "chain_type"  # heavy/light 라우팅, 토크나이저 선택, VH/VL head 라벨에 모두 사용
+id_col:    "sample_id"
+
+# 동적 패딩: 배치 안 최댓값까지만 패딩한다 (model_OAS와 동일한 이유로 학습이 빨라진다).
+# heavy/light 는 서로 다른 ABtokenizer라 pad_token_id가 다를 수 있어, collate_dynamic이
+# 샘플마다 자기 chain의 pad_token으로 패딩한다.
+dynamic_padding: true
+
+# ABlang 위치 임베딩 테이블 크기(hparams.max_position_embeddings)를 넘으면 에러가 난다
+# (train.py의 build_model()이 fold 진입 시 바로 확인한다). ABlang heavy 체크포인트로
+# 실측: max_position_embeddings=160 — 이게 곧 이 모델의 하드 리밋이라 ESM 버전(max_len=256)
+# 처럼 여유 있게 키울 수 없다. OAS_paired 최대 seq_len: heavy 156 / light 123
+# → '<'+AA+'>' 기준 heavy 158 토큰 필요 → 160 한도 안에 여유 2토큰으로 들어온다.
+max_len: 160
+
+# 전처리 필터 (null = 비활성화)
+quality_filter: "ok" # quality_flag 가 이 값인 행만 사용 (null 이면 전체)
+dedup: false         # sequence+mask 중복 제거 (fold 안에서만)
+
+batch_size:       256
+valid_batch_size: 256
+num_workers:      8
+
+# 서브샘플 (null = 전체 사용). 기본은 전부 null = 전체 데이터 학습.
+# 스모크 테스트나 빠른 실험 때만 숫자를 넣는다.
+max_train_samples: null
+max_valid_samples: null
+max_test_samples:  null
+
+# ── 최적화 ───────────────────────────────────────────────────────────────────
+lr:            0.0001
+weight_decay:  0.001
+max_grad_norm: 1.0
+
+amp:       true     # bf16 autocast (RTX 5090). false = fp32
+amp_dtype: "bf16"   # "bf16" | "fp16"
+
+num_epochs:     1    # frozen 인코더 위에 얕은 헤드만 학습이라 수렴이 빠르다.
+                     # 필요하면 올리고 --resume 으로 이어서 학습.
+validate_every: 1
+save_every:     1    # 긴 학습이므로 매 epoch 저장 (--resume 로 이어서 학습 가능)
+patience:       2    # val CDR-F1 기준 early stopping (0=비활성화)
+
+# region 손실에서 CDR 클래스(CDR1/2/3)에 주는 가중치. FR 토큰이 더 많아서 보정한다.
+pos_weight: 3.0
+
+# 전체 손실 = region_CE + chain_loss_weight * chain_BCE
+chain_loss_weight: 1.0
+
+# 테스트 예측 저장 (test_predictions.csv.gz)
+save_test_predictions: true
+
+# ── 모델 ─────────────────────────────────────────────────────────────────────
+model:
+  ablang_model_dir: "download"  # ablang 패키지 폴더 안에 자동 다운로드(체인당 한 번만)
+  dropout: 0.1
+  freeze_ablang: true          # ABlang frozen (새 레이어 + head들만 학습)
+  unfreeze_last_n: 0           # frozen 상태에서 마지막 N개 ABlang EncoderBlock unfreeze (0=전체 frozen)
+  num_attn_heads: null         # null이면 ABlang 자신의 num_attention_heads 사용
+  use_chain_head: true         # 전체 mean-pooling → VH/VL head 사용 여부

@@ -1,0 +1,69 @@
+# CDR_AbLang V5 - 256-d single-map BAN confidence-gated interaction
+#
+#   VH  →  AbLang heavy (frozen, 768)  ┐
+#   VL  →  AbLang light (frozen, 768)  ┴→ attn_block → ab_proj (768→proj_dim)
+#   AG  →  ESM2-150M   (frozen, 640)  ───→ ag_proj (640→proj_dim)
+#                                      └→ InteractionBlock
+
+seed: 42
+
+pretrained:
+  # CDR prediction에서 학습한 frozen AbLang CDR checkpoint
+  cdr_ckpt: "../checkpoints/cdr_ablang_best_model.pt"
+
+data:
+  dataset: "AVIDa_SARS_CoV_2"          # SAbDab | HIV | CoVAbDab | il6 | AVIDa_SARS_CoV_2
+  data_root: "../data/ab_ag"
+  vh_max_len: 160
+  vl_max_len: 160
+  ag_max_len: 512
+  max_len:
+    SAbDab:            {vh: 160, vl: 160, ag: 1024}
+    HIV:               {vh: 160, vl: 160, ag: 1024}
+    CoVAbDab:          {vh: 160, vl: 160, ag: 512}
+    il6:               {vh: 160, ag: 256}
+    AVIDa_SARS_CoV_2:  {vh: 160, ag: 1408}
+  all: false
+  fold: 0
+  seed: 0
+  split_type: "unseen"
+
+model:
+  esm_model_name: "facebook/esm2_t30_150M_UR50D"
+  ag_embed_dim: 640
+  ablang_model_dir: "download"
+  num_classes: 1
+  dropout: 0.1
+
+  # Interaction feature head. proj_dim % co_attn_heads == 0 이어야 한다.
+  # Original BAN-style single residue-pair map.
+  co_attn_heads: 1
+
+  # 항체와 항원이 만나는 공통 interaction 차원.
+  proj_dim: 256
+
+  use_interaction_residual: true
+  # BAN-style: all valid pair-map cells enter bilinear attention pooling.
+  # This replaces V2/V3's CNN + top-k map branch.
+  use_ban_pooling: true
+  ban_pool_dim: 256
+  # Match CDR-SCA_BAN_V2: keep raw BAN scores unless explicitly enabled.
+  ban_softmax: false
+
+train:
+  save_dir: "./runs"
+  batch_size: 64
+  valid_batch_size: 64
+  num_workers: 4
+  num_epochs: 100
+  validate_every: 1
+  lr: 1.0e-3
+  weight_decay: 1.0e-4
+  max_grad_norm: 1.0
+  pos_weight: 1.0
+  class_weights: null
+  best_metric_key: "auroc"
+  early_stopping_patience: 5
+  # All BAN variants share the canonical cache one directory above this project.
+  embedding_cache_dir: "../emb"
+  embedding_cache_batch_size: 32
